@@ -1,5 +1,6 @@
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
+from passlib.hash import pbkdf2_sha256 as sha256
 
 db = SQLAlchemy()
 ma = Marshmallow()
@@ -13,12 +14,22 @@ class User(db.Model):
     def __init__(self, username, email, password):
         self.username = username
         self.email = email
-        self.password = password # will be changed to hashed pass
+        self.password = User.generate_hash(password)
+
+    @staticmethod
+    def generate_hash(password):
+        return sha256.hash(password)
+    @staticmethod
+    def verify_hash(password, hash):
+        return sha256.verify(password, hash)
+    @classmethod
+    def find_by_username(cls, username):
+        return cls.query.filter_by(username = username).first()
 
 class UserSchema(ma.Schema):
     class Meta:
         # Fields to expose
-        fields = ('username', 'email')
+        fields = ('username', 'email', 'password')
 
 
 user_schema = UserSchema()
